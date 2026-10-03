@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0A0D12">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Matchday — 7v7 Team Balancer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0D12;
+    --bg-alt:#0F131A;
+    --card:#151B23;
+    --card-border:#242C38;
+    --card-border-soft:#1B222C;
+    --text:#EAF0F6;
+    --text-dim:#8B96A5;
+    --text-faint:#5B6577;
+    --gold:#FFC94D;
+    --gold-dim:#7A6531;
+    --teamA:#35A7FF;
+    --teamA-deep:#1B6FBF;
+    --teamA-glow:rgba(53,167,255,.30);
+    --teamB:#FF4A66;
+    --teamB-deep:#C6273F;
+    --teamB-glow:rgba(255,74,102,.30);
+    --pitch-a:#0C4B2E;
+    --pitch-b:#0F5936;
+    --line:rgba(255,255,255,.38);
+    --radius:16px;
+    --radius-sm:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;touch-action:manipulation;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(53,167,255,.07), transparent 60%),
+      radial-gradient(1200px 600px at 85% 0%, rgba(255,74,102,.06), transparent 60%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Inter',system-ui,sans-serif;
+    min-height:100vh;
+    padding-bottom:60px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{max-width:1180px; margin:0 auto; padding:0 20px;}
+
+  /* ---------- Header ---------- */
+  .topbar{
+    padding:38px 4px 26px;
+    border-bottom:1px solid var(--card-border-soft);
+    margin-bottom:28px;
+    display:flex; flex-direction:column; gap:6px;
+  }
+  .topbar h1{
+    font-family:'Oswald',sans-serif;
+    font-weight:700;
+    font-size:34px;
+    letter-spacing:1px;
+    margin:0;
+    text-transform:uppercase;
+    display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;
+  }
+  .topbar h1 span{
+    font-family:'Inter',sans-serif;
+    font-weight:500;
+    font-size:15px;
+    letter-spacing:.5px;
+    color:var(--text-dim);
+    text-transform:none;
+  }
+  .topbar .tagline{margin:0; color:var(--text-faint); font-size:13.5px; letter-spacing:.2px;}
+  .dot-split{color:var(--teamA);}
+
+  /* ---------- Panels ---------- */
+  .panel{
+    background:var(--card);
+    border:1px solid var(--card-border);
+    border-radius:var(--radius);
+    padding:22px 24px 26px;
+    margin-bottom:22px;
+  }
+  .panel-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;}
+  .panel-head h2{
+    font-family:'Oswald',sans-serif;
+    font-size:18px;
+    letter-spacing:.6px;
+    text-transform:uppercase;
+    margin:0;
+    font-weight:600;
+    color:var(--text);
+  }
+  .count-badge{
+    font-family:'Space Mono',monospace;
+    font-size:11.5px;
+    color:var(--text-dim);
+    background:var(--bg-alt);
+    border:1px solid var(--card-border);
+    padding:4px 10px;
+    border-radius:999px;
+  }
+
+  /* ---------- Add form ---------- */
+  .add-form{
+    display:grid;
+    grid-template-columns: 1fr 150px 150px 150px;
+    gap:10px;
+    margin-bottom:18px;
+  }
+  input, select, button{
+    font-family:'Inter',sans-serif;
+    font-size:13.5px;
+  }
+  input[type=text], select{
+    background:var(--bg-alt);
+    border:1px solid var(--card-border);
+    color:var(--text);
+    border-radius:var(--radius-sm);
+    padding:10px 12px;
+    outline:none;
+    transition:border-color .15s ease;
+  }
+  input[type=text]:focus, select:focus{border-color:var(--teamA);}
+  select{appearance:none; cursor:pointer; background-image:linear-gradient(45deg, transparent 50%, var(--text-dim) 50%), linear-gradient(135deg, var(--text-dim) 50%, transparent 50%); background-position: calc(100% - 16px) center, calc(100% - 11px) center; background-size:5px 5px, 5px 5px; background-repeat:no-repeat; padding-right:30px;}
+  button{
+    cursor:pointer;
+    border:none;
+    border-radius:var(--radius-sm);
+    font-weight:600;
+    letter-spacing:.3px;
+  }
+  #addBtn{
+    background:var(--teamA);
+    color:#04101C;
+    padding:10px 14px;
+    transition:filter .15s ease, transform .1s ease;
+  }
+  #addBtn:hover{filter:brightness(1.1);}
+  #addBtn:active{transform:scale(.97);}
+
+  /* ---------- Roster list ---------- */
+  .roster-list{display:flex; flex-direction:column; gap:8px;}
+  .roster-row{
+    display:grid;
+    grid-template-columns: 1fr 90px 110px 74px 74px;
+    align-items:center;
+    gap:10px;
+    background:var(--bg-alt);
+    border:1px solid var(--card-border-soft);
+    border-radius:var(--radius-sm);
+    padding:10px 12px;
+  }
+  .roster-row .p-name{font-weight:600; font-size:13.5px;}
+  .pos-badge{
+    font-family:'Space Mono',monospace;
+    font-size:11px;
+    text-align:center;
+    padding:4px 6px;
+    border-radius:6px;
+    border:1px solid var(--card-border);
+    color:var(--text-dim);
+    background:rgba(255,255,255,.02);
+    white-space:nowrap;
+  }
+  .stars{color:var(--gold); letter-spacing:1px; font-size:13px; white-space:nowrap;}
+  .stars .empty{color:var(--gold-dim);}
+  .row-actions{display:flex; gap:6px;}
+  .row-actions button{
+    background:transparent;
+    border:1px solid var(--card-border);
+    color:var(--text-dim);
+    padding:6px 9px;
+    border-radius:8px;
+    font-size:12px;
+  }
+  .row-actions button:hover{color:var(--text); border-color:var(--text-dim);}
+  .row-actions .del-btn:hover{color:var(--teamB); border-color:var(--teamB-deep);}
+
+  .roster-row.editing{
+    grid-template-columns: 1fr 110px 110px 130px;
+    background:var(--bg);
+  }
+  .roster-row.editing input, .roster-row.editing select{padding:7px 9px; font-size:12.5px;}
+  .edit-actions{display:flex; gap:6px;}
+  .edit-actions button{padding:6px 10px; font-size:12px; border-radius:7px;}
+  .save-btn{background:var(--teamA); color:#04101C; border:none;}
+  .cancel-btn{background:transparent; border:1px solid var(--card-border); color:var(--text-dim);}
+  .empty-roster{color:var(--text-faint); font-size:13px; padding:14px 4px; text-align:center;}
+
+  /* ---------- Setup panel ---------- */
+  .setup-row{
+    display:flex; flex-direction:column; align-items:flex-start; gap:12px;
+  }
+  #generateBtn{
+    background:linear-gradient(135deg, var(--teamA), var(--teamB));
+    color:#08101A;
+    padding:14px 24px;
+    font-size:14px;
+    border-radius:12px;
+    text-transform:uppercase;
+    font-weight:700;
+    letter-spacing:.5px;
+    box-shadow:0 6px 18px rgba(53,167,255,.18), 0 6px 18px rgba(255,74,102,.12);
+    transition:transform .12s ease, filter .15s ease;
+    width: 100%;
+  }
+  @media(min-width:600px){
+    #generateBtn{width: auto;}
+  }
+  #generateBtn:hover{filter:brightness(1.08);}
+  #generateBtn:active{transform:scale(.98);}
+  .setup-hint{font-size:12px; color:var(--text-faint); margin-top:4px;}
+
+  /* ---------- Balance meter ---------- */
+  .balance-meter{margin-top:24px; border-top:1px solid var(--card-border-soft); padding-top:20px;}
+  .meter-label{font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--text-dim); margin-bottom:10px; font-weight:600;}
+  .meter-track{
+    display:flex; width:100%; height:14px; border-radius:999px; overflow:hidden;
+    background:var(--bg-alt); border:1px solid var(--card-border);
+  }
+  .meter-fill{height:100%; transition:width .5s cubic-bezier(.22,1,.36,1);}
+  .meter-fill.teamA{background:linear-gradient(90deg, var(--teamA-deep), var(--teamA)); box-shadow:0 0 12px var(--teamA-glow) inset;}
+  .meter-fill.teamB{background:linear-gradient(90deg, var(--teamB), var(--teamB-deep)); box-shadow:0 0 12px var(--teamB-glow) inset;}
+  .meter-numbers{display:flex; justify-content:space-between; margin-top:8px; font-family:'Space Mono',monospace; font-size:13px;}
+  .meter-numbers span:first-child{color:var(--teamA);}
+  .meter-numbers span:last-child{color:var(--teamB);}
+
+  /* ---------- Results ---------- */
+  .results{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:22px;
+  }
+  @media(max-width:860px){ 
+    .results{grid-template-columns:1fr;} 
+    .add-form{grid-template-columns:1fr; gap:12px;} 
+    .add-form button{padding:14px;}
+    .roster-row{grid-template-columns:1fr auto auto auto auto;} 
+  }
+
+  .team-card{
+    background:var(--card);
+    border:1px solid var(--card-border);
+    border-radius:var(--radius);
+    overflow:hidden;
+  }
+  .teamA-card{box-shadow: inset 3px 0 0 var(--teamA);}
+  .teamB-card{box-shadow: inset 3px 0 0 var(--teamB);}
+
+  .team-head{
+    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;
+    padding:18px 20px 14px;
+  }
+  .team-title-wrap{display:flex; align-items:center; gap:10px;}
+  .team-head h3{
+    font-family:'Oswald',sans-serif;
+    text-transform:uppercase;
+    letter-spacing:.8px;
+    font-size:19px;
+    margin:0;
+  }
+  .teamA-card h3{color:var(--teamA);}
+  .teamB-card h3{color:var(--teamB);}
+  
+  .formation-badge{
+    font-family:'Space Mono',monospace;
+    font-size:12px;
+    color:var(--text-dim);
+    background:var(--bg-alt);
+    border:1px solid var(--card-border);
+    padding:4px 8px;
+    border-radius:6px;
+    font-weight:normal;
+    letter-spacing:0;
+  }
+
+  .star-total{
+    font-family:'Space Mono',monospace;
+    font-size:13px;
+    color:var(--gold);
+    display:flex; align-items:center; gap:6px;
+    background:var(--bg-alt);
+    border:1px solid var(--card-border);
+    padding:6px 12px;
+    border-radius:999px;
+  }
+
+  /* pitch */
+  .pitch-wrap{padding:0 16px;}
+  .pitch{
+    position:relative;
+    width:100%;
+    aspect-ratio:3/4;
+    border-radius:10px;
+    overflow:hidden;
+    background:
+      repeating-linear-gradient(0deg, var(--pitch-b) 0 40px, var(--pitch-a) 40px 80px);
+    border:2px solid rgba(255,255,255,.18);
+  }
+  .pitch::before{
+    content:''; position:absolute; left:0; right:0; top:50%;
+    border-top:2px solid var(--line);
+  }
+  .pitch::after{
+    content:''; position:absolute; left:50%; top:50%; width:22%; aspect-ratio:1;
+    border:2px solid var(--line); border-radius:50%;
+    transform:translate(-50%,-50%);
+  }
+  .goal-box{
+    position:absolute; left:50%; width:46%; height:12%;
+    border:2px solid var(--line); border-top:none; transform:translateX(-50%);
+  }
+  .goal-box.bottom{bottom:0; border-bottom:none; border-top:2px solid var(--line);}
+  .goal-box.top{top:0; border-top:none; border-bottom:2px solid var(--line);}
+
+  .player-dot{
+    position:absolute;
+    transform:translate(-50%,-50%);
+    display:flex; flex-direction:column; align-items:center;
+    gap:4px; width:78px;
+  }
+  .p-circle{
+    width:34px; height:34px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Oswald',sans-serif; font-weight:600; font-size:12.5px;
+    color:#04101C; border:2px solid rgba(255,255,255,.85);
+  }
+  .teamA-card .p-circle{background:radial-gradient(circle at 35% 30%, #82CBFF, var(--teamA)); box-shadow:0 0 14px var(--teamA-glow);}
+  .teamB-card .p-circle{background:radial-gradient(circle at 35% 30%, #FF98A9, var(--teamB)); box-shadow:0 0 14px var(--teamB-glow);}
+  .p-tag{
+    font-size:10.5px; color:#fff; text-align:center; line-height:1.15;
+    text-shadow:0 1px 3px rgba(0,0,0,.85); font-weight:600;
+    max-width:78px; overflow-wrap:anywhere;
+  }
+  .p-stars{font-size:9px; color:var(--gold); text-shadow:0 1px 3px rgba(0,0,0,.9);}
+
+  .player-dot.open .p-circle{
+    background:transparent; border:2px dashed rgba(255,255,255,.35); color:rgba(255,255,255,.4);
+  }
+  .player-dot.open .p-tag{color:rgba(255,255,255,.35); text-shadow:none;}
+
+  /* bench */
+  .bench{padding:14px 20px 20px;}
+  .bench-label{font-size:10.5px; text-transform:uppercase; letter-spacing:.8px; color:var(--text-faint); margin-bottom:8px; font-weight:600;}
+  .bench-chips{display:flex; flex-wrap:wrap; gap:6px;}
+  .bench-chip{
+    font-size:11.5px; background:var(--bg-alt); border:1px solid var(--card-border);
+    padding:5px 10px; border-radius:999px; color:var(--text-dim);
+  }
+
+  .placeholder-results{
+    text-align:center; padding:60px 20px; color:var(--text-faint);
+    font-size:13.5px; border:1px dashed var(--card-border); border-radius:var(--radius);
+    grid-column:1/-1;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <h1>MATCHDAY <span>7v7 Team Balancer</span></h1>
+    <p class="tagline">Even <span class="dot-split">stars</span>, intelligent formations, zero sideline debates.</p>
+  </header>
+
+  <section class="panel roster-panel">
+    <div class="panel-head">
+      <h2>Roster</h2>
+      <span class="count-badge" id="rosterCount">0 players</span>
+    </div>
+    <form class="add-form" id="addForm">
+      <input type="text" id="nameInput" placeholder="Player name" required maxlength="30">
+      <select id="posInput">
+        <option value="DF">DF</option>
+        <option value="MF">MF</option>
+        <option value="FW">FW</option>
+        <option value="DF/MF">DF/MF</option>
+        <option value="MF/FW">MF/FW</option>
+      </select>
+      <select id="skillInput">
+        <option value="1">1 Star</option>
+        <option value="2">2 Stars</option>
+        <option value="3" selected>3 Stars</option>
+      </select>
+      <button type="submit" id="addBtn">+ Add Player</button>
+    </form>
+    <div class="roster-list" id="rosterList"></div>
+  </section>
+
+  <section class="panel setup-panel">
+    <div class="panel-head"><h2>Match Setup</h2></div>
+    <div class="setup-row">
+      <button id="generateBtn" type="button">Generate Matchup</button>
+      <div class="setup-hint" id="setupHint">The AI will distribute players evenly and auto-select the best formation for each team's composition.</div>
+    </div>
+    
+    <div class="balance-meter" id="balanceMeter" style="display:none;">
+      <div class="meter-label">Overall Star Balance</div>
+      <div class="meter-track">
+        <div class="meter-fill teamA" id="meterA"></div>
+        <div class="meter-fill teamB" id="meterB"></div>
+      </div>
+      <div class="meter-numbers">
+        <span id="meterATotal">Team A — 0★</span>
+        <span id="meterBTotal">Team B — 0★</span>
+      </div>
+      <div class="setup-hint" id="balanceHint" style="margin-top:12px; text-align:center;"></div>
+    </div>
+  </section>
+
+  <section class="results" id="results">
+    <div class="placeholder-results" id="placeholder">Add players to your roster, then click Generate Matchup to see dynamic balanced teams.</div>
+  </section>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var STORAGE_KEY = "matchday_roster_v2";
+
+  var DEFAULT_PLAYERS = [
+    {name:"Alex Turner",   position:"DF",    skill:3},
+    {name:"Jordan Lee",    position:"DF",    skill:2},
+    {name:"Sam Rivera",    position:"DF",    skill:2},
+    {name:"Casey Brooks",  position:"DF/MF", skill:3},
+    {name:"Morgan Blake",  position:"MF",    skill:3},
+    {name:"Taylor Reed",   position:"MF",    skill:2},
+    {name:"Jamie Fox",     position:"MF",    skill:1},
+    {name:"Drew Ellis",    position:"MF/FW", skill:2},
+    {name:"Riley Stone",   position:"FW",    skill:3},
+    {name:"Quinn Parker",  position:"FW",    skill:2},
+    {name:"Avery Cole",    position:"DF",    skill:1},
+    {name:"Skyler James",  position:"MF/FW", skill:1}
+  ];
+
+  var FORMATIONS = {
+    "2-3-1": [ {type:"DF", y:82, count:2}, {type:"MF", y:52, count:3}, {type:"FW", y:20, count:1} ],
+    "3-1-2": [ {type:"DF", y:82, count:3}, {type:"MF", y:52, count:1}, {type:"FW", y:20, count:2} ],
+    "3-2-1": [ {type:"DF", y:82, count:3}, {type:"MF", y:52, count:2}, {type:"FW", y:20, count:1} ],
+    "2-2-2": [ {type:"DF", y:82, count:2}, {type:"MF", y:52, count:2}, {type:"FW", y:20, count:2} ]
+  };
+
+  var players = [];
+  var editingId = null;
+
+  // ---------- persistence ----------
+  function loadPlayers(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if(raw){
+        var parsed = JSON.parse(raw);
+        if(Array.isArray(parsed) && parsed.length){ return parsed; }
+      }
+    }catch(e){}
+    return DEFAULT_PLAYERS.map(function(p){ return Object.assign({id:uid()}, p); });
+  }
+  function savePlayers(){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(players)); }catch(e){}
+  }
+
+  function uid(){ return 'p_' + Math.random().toString(36).slice(2,10); }
+
+  // ---------- roster rendering ----------
+  var rosterList = document.getElementById('rosterList');
+  var rosterCount = document.getElementById('rosterCount');
+
+  function starString(skill){
+    var full = '★'.repeat(skill);
+    var empty = '<span class="empty">' + '★'.repeat(3-skill) + '</span>';
+    return full + empty;
+  }
+
+  function renderRoster(){
+    rosterCount.textContent = players.length + (players.length === 1 ? ' player' : ' players');
+    rosterList.innerHTML = '';
+    if(!players.length){
+      rosterList.innerHTML = '<div class="empty-roster">No players yet. Add someone above to get started.</div>';
+      return;
+    }
+    players.forEach(function(p){
+      var row = document.createElement('div');
+      if(editingId === p.id){
+        row.className = 'roster-row editing';
+        row.innerHTML =
+          '<input type="text" class="edit-name" value="'+escapeHtml(p.name)+'" maxlength="30">' +
+          '<select class="edit-pos">' + positionOptions(p.position) + '</select>' +
+          '<select class="edit-skill">' + skillOptions(p.skill) + '</select>' +
+          '<div class="edit-actions">' +
+            '<button class="save-btn">Save</button>' +
+            '<button class="cancel-btn">Cancel</button>' +
+          '</div>';
+        row.querySelector('.save-btn').addEventListener('click', function(){
+          var name = row.querySelector('.edit-name').value.trim();
+          if(!name) return;
+          p.name = name;
+          p.position = row.querySelector('.edit-pos').value;
+          p.skill = parseInt(row.querySelector('.edit-skill').value, 10);
+          editingId = null;
+          savePlayers();
+          renderRoster();
+        });
+        row.querySelector('.cancel-btn').addEventListener('click', function(){
+          editingId = null;
+          renderRoster();
+        });
+      } else {
+        row.className = 'roster-row';
+        row.innerHTML =
+          '<div class="p-name">'+escapeHtml(p.name)+'</div>' +
+          '<div class="pos-badge">'+p.position+'</div>' +
+          '<div class="stars">'+starString(p.skill)+'</div>' +
+          '<div class="row-actions"><button class="edit-btn" title="Edit">Edit</button></div>' +
+          '<div class="row-actions"><button class="del-btn" title="Delete">Del</button></div>';
+        row.querySelector('.edit-btn').addEventListener('click', function(){
+          editingId = p.id;
+          renderRoster();
+        });
+        row.querySelector('.del-btn').addEventListener('click', function(){
+          players = players.filter(function(x){ return x.id !== p.id; });
+          savePlayers();
+          renderRoster();
+        });
+      }
+      rosterList.appendChild(row);
+    });
+  }
+
+  function positionOptions(selected){
+    return ["DF","MF","FW","DF/MF","MF/FW"].map(function(v){
+      return '<option value="'+v+'"'+(v===selected?' selected':'')+'>'+v+'</option>';
+    }).join('');
+  }
+  function skillOptions(selected){
+    return [1,2,3].map(function(v){
+      return '<option value="'+v+'"'+(v===selected?' selected':'')+'>'+v+' Star'+(v>1?'s':'')+'</option>';
+    }).join('');
+  }
+  function escapeHtml(s){
+    return s.replace(/[&<>"']/g, function(c){
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+    });
+  }
+
+  document.getElementById('addForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    var name = document.getElementById('nameInput').value.trim();
+    if(!name) return;
+    var position = document.getElementById('posInput').value;
+    var skill = parseInt(document.getElementById('skillInput').value, 10);
+    players.push({id:uid(), name:name, position:position, skill:skill});
+    document.getElementById('nameInput').value = '';
+    savePlayers();
+    renderRoster();
+  });
+
+  // ---------- balancing & algorithm ----------
+  function shuffle(arr){
+    var a = arr.slice();
+    for(var i=a.length-1;i>0;i--){
+      var j = Math.floor(Math.random()*(i+1));
+      var t=a[i]; a[i]=a[j]; a[j]=t;
+    }
+    return a;
+  }
+
+  function balanceTeams(list){
+    var teamSize = Math.floor(list.length / 2);
+    var tiers = {3:[], 2:[], 1:[]};
+    list.forEach(function(p){ tiers[p.skill].push(p); });
+
+    var teamA=[], teamB=[], totalA=0, totalB=0;
+
+    [3,2,1].forEach(function(tier){
+      shuffle(tiers[tier]).forEach(function(p){
+        var aFull = teamA.length >= teamSize;
+        var bFull = teamB.length >= teamSize;
+        if(aFull && !bFull){ teamB.push(p); totalB += p.skill; }
+        else if(bFull && !aFull){ teamA.push(p); totalA += p.skill; }
+        else if(totalA <= totalB){ teamA.push(p); totalA += p.skill; }
+        else { teamB.push(p); totalB += p.skill; }
+      });
+    });
+
+    return {teamA:teamA, teamB:teamB, totalA:totalA, totalB:totalB};
+  }
+
+  function buildSlots(formationKey){
+    var rows = FORMATIONS[formationKey];
+    var slots = [];
+    rows.forEach(function(row){
+      var xs = xPositions(row.count);
+      for(var i=0;i<row.count;i++){
+        slots.push({type:row.type, x:xs[i], y:row.y, player:null});
+      }
+    });
+    return slots;
+  }
+  function xPositions(n){
+    if(n===1) return [50];
+    if(n===2) return [30,70];
+    if(n===3) return [18,50,82];
+    if(n===4) return [14,38,62,86];
+    var arr=[]; for(var i=0;i<n;i++){ arr.push( (100/(n+1))*(i+1) ); } return arr;
+  }
+
+  function assignPositions(teamPlayers, formationKey){
+    var slots = buildSlots(formationKey);
+    var pool = teamPlayers.slice();
+
+    // pass 1: exact matches
+    slots.forEach(function(slot){
+      if(slot.player) return;
+      var idx = pool.findIndex(function(p){ return p.position === slot.type; });
+      if(idx > -1){ slot.player = pool[idx]; pool.splice(idx,1); }
+    });
+
+    // pass 2: hybrids
+    pool.slice().forEach(function(p){
+      var order = null;
+      if(p.position === 'DF/MF') order = ['DF','MF'];
+      else if(p.position === 'MF/FW') order = ['MF','FW'];
+      if(!order) return;
+      for(var i=0;i<order.length;i++){
+        var slot = slots.find(function(s){ return !s.player && s.type === order[i]; });
+        if(slot){ slot.player = p; pool.splice(pool.indexOf(p),1); break; }
+      }
+    });
+
+    // pass 3: remaining exact-type players into any still-open slot of same type
+    pool.slice().forEach(function(p){
+      var slot = slots.find(function(s){ return !s.player && s.type === p.position; });
+      if(slot){ slot.player = p; pool.splice(pool.indexOf(p),1); }
+    });
+
+    // pass 4: force-fill left-overs
+    pool.slice().forEach(function(p){
+      var slot = slots.find(function(s){ return !s.player; });
+      if(slot){ slot.player = p; pool.splice(pool.indexOf(p),1); }
+    });
+
+    return {slots:slots, bench:pool};
+  }
+
+  // Evaluate how well a specific team fits a formation
+  function evaluateFormation(teamPlayers, formationKey) {
+      var assignment = assignPositions(teamPlayers, formationKey);
+      var fitScore = 0;
+      
+      assignment.slots.forEach(function(slot){
+          if (slot.player) {
+              var pos = slot.player.position;
+              if (pos === slot.type) {
+                  fitScore += 2; // Perfect fit
+              } else if (pos.indexOf(slot.type) !== -1) {
+                  fitScore += 1; // Partial fit (e.g., DF/MF playing DF)
+              }
+          }
+      });
+      return fitScore;
+  }
+
+  // Find the optimal formation for a given roster subset
+  function getBestFormation(teamPlayers) {
+      var bestKey = "2-3-1";
+      var bestScore = -1;
+      
+      for (var key in FORMATIONS) {
+          var score = evaluateFormation(teamPlayers, key);
+          if (score > bestScore) {
+              bestScore = score;
+              bestKey = key;
+          }
+      }
+      return bestKey;
+  }
+
+  function initials(name){
+    var parts = name.trim().split(/\s+/);
+    if(parts.length === 1) return parts[0].slice(0,2).toUpperCase();
+    return (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
+  }
+
+  // ---------- rendering results ----------
+  var resultsEl = document.getElementById('results');
+  var balanceMeter = document.getElementById('balanceMeter');
+  var balanceHint = document.getElementById('balanceHint');
+
+  function renderPitchHtml(assignment){
+    var dots = assignment.slots.map(function(slot){
+      if(slot.player){
+        var p = slot.player;
+        return '<div class="player-dot" style="left:'+slot.x+'%; top:'+slot.y+'%;">' +
+          '<div class="p-circle">'+initials(p.name)+'</div>' +
+          '<div class="p-tag">'+escapeHtml(p.name)+'</div>' +
+          '<div class="p-stars">'+'★'.repeat(p.skill)+'</div>' +
+          '</div>';
+      }
+      return '<div class="player-dot open" style="left:'+slot.x+'%; top:'+slot.y+'%;">' +
+        '<div class="p-circle">'+slot.type+'</div>' +
+        '<div class="p-tag">Open</div>' +
+        '</div>';
+    }).join('');
+
+    return '<div class="pitch">' +
+      '<div class="goal-box top"></div>' +
+      '<div class="goal-box bottom"></div>' +
+      dots +
+      '</div>';
+  }
+
+  function renderBenchHtml(bench){
+    if(!bench.length) return '';
+    var chips = bench.map(function(p){
+      return '<div class="bench-chip">'+escapeHtml(p.name)+' · '+p.position+' · '+p.skill+'★</div>';
+    }).join('');
+    return '<div class="bench"><div class="bench-label">Substitutes</div><div class="bench-chips">'+chips+'</div></div>';
+  }
+
+  function renderResults(){
+    var result = balanceTeams(players);
+
+    // AI selects best formation per team
+    var formA = getBestFormation(result.teamA);
+    var formB = getBestFormation(result.teamB);
+
+    var assignA = assignPositions(result.teamA, formA);
+    var assignB = assignPositions(result.teamB, formB);
+
+    resultsEl.innerHTML =
+      '<div class="team-card teamA-card">' +
+        '<div class="team-head">' +
+          '<div class="team-title-wrap"><h3>Team A</h3><span class="formation-badge">' + formA + ' Shape</span></div>' +
+          '<div class="star-total">★ '+result.totalA+' pts</div>' +
+        '</div>' +
+        '<div class="pitch-wrap">'+renderPitchHtml(assignA)+'</div>' +
+        renderBenchHtml(assignA.bench) +
+      '</div>' +
+      '<div class="team-card teamB-card">' +
+        '<div class="team-head">' +
+          '<div class="team-title-wrap"><h3>Team B</h3><span class="formation-badge">' + formB + ' Shape</span></div>' +
+          '<div class="star-total">★ '+result.totalB+' pts</div>' +
+        '</div>' +
+        '<div class="pitch-wrap">'+renderPitchHtml(assignB)+'</div>' +
+        renderBenchHtml(assignB.bench) +
+      '</div>';
+
+    var total = result.totalA + result.totalB;
+    var pctA = total ? (result.totalA/total*100) : 50;
+    var pctB = 100 - pctA;
+    document.getElementById('meterA').style.width = pctA + '%';
+    document.getElementById('meterB').style.width = pctB + '%';
+    document.getElementById('meterATotal').textContent = 'Team A — ' + result.totalA + '★';
+    document.getElementById('meterBTotal').textContent = 'Team B — ' + result.totalB + '★';
+    balanceMeter.style.display = 'block';
+
+    var diff = Math.abs(result.totalA - result.totalB);
+    balanceHint.textContent = diff <= 1
+      ? 'Perfectly balanced — star difference is ' + diff + '.'
+      : 'Closest possible split for this roster — star difference is ' + diff + '.';
+  }
+
+  document.getElementById('generateBtn').addEventListener('click', function(){
+    if(players.length < 2){
+      alert('Add at least 2 players to generate teams.');
+      return;
+    }
+    renderResults();
+  });
+
+  // ---------- init ----------
+  players = loadPlayers();
+  savePlayers();
+  renderRoster();
+})();
+</script>
+</body>
+</html>
